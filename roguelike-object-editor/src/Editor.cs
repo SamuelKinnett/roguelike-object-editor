@@ -20,11 +20,6 @@ namespace roguelikeobjecteditor.src
             //fileManager.LoadUserPrefs();
             //Console.ReadLine();
 
-            string test1 = gui.GetInput(2, 2, "Test");
-            Console.Clear();
-            Console.WriteLine(test1);
-            Console.ReadLine();
-
             bool exitProgram = false;
 
             while (!exitProgram)

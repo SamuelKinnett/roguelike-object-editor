@@ -90,9 +90,9 @@ namespace roguelikeobjecteditor.src
 			Console.SetCursorPosition (0, 0);
 		}
 
-        public string DisplayList(int x, int y, int width, int height, string title, string[] items)
+        public string DisplayList(int x, int y, int width, int height, string title, string[] items, int initialSelectionState = 0)
         {
-            int selectedItem = 0;
+            int selectedItem = initialSelectionState;
             int pageNumber = 0;
             int pages = 0;
             int itemsPerPage = 0;
@@ -122,9 +122,11 @@ namespace roguelikeobjecteditor.src
                 //If there are multiple pages, write this information in the top right corner
                 if (pages > 1)
                 {
+                    Console.ForegroundColor = ConsoleColor.Gray;
                     string pageInfo = "page " + (pageNumber + 1) + "/" + pages;
-                    Console.SetCursorPosition(width - 1 - pageInfo.Length, y);
+                    Console.SetCursorPosition(width - pageInfo.Length, y);
                     Console.Write(pageInfo);
+                    Console.ForegroundColor = ConsoleColor.White;
                 }
 
                 for (int c = (pageNumber * itemsPerPage); c < (pageNumber * itemsPerPage) + itemsPerPage; ++c) {
@@ -257,6 +259,9 @@ namespace roguelikeobjecteditor.src
             Console.ForegroundColor = ConsoleColor.White;
             Console.BackgroundColor = ConsoleColor.Black;
 
+            if (title == "ERROR")
+                Console.ForegroundColor = ConsoleColor.Red;
+
             //Draw the box border
             Console.SetCursorPosition(x, y);
             Console.Write("┌");
@@ -274,23 +279,34 @@ namespace roguelikeobjecteditor.src
                 if (title != "" && c - (x + 1) < title.Length)
                 {
                     Console.ForegroundColor = ConsoleColor.Gray;
+                    if (title == "ERROR")
+                        Console.ForegroundColor = ConsoleColor.Red;
                     Console.Write(title.Substring(c - (x + 1), 1));
                     Console.ForegroundColor = ConsoleColor.White;
                 }
                 else
                 {
+                    if (title == "ERROR")
+                        Console.ForegroundColor = ConsoleColor.Red;
                     Console.Write("─");
+                    Console.ForegroundColor = ConsoleColor.White;
                 }
+                if (title == "ERROR")
+                    Console.ForegroundColor = ConsoleColor.Red;
                 Console.SetCursorPosition(c, y + height);
                 Console.Write("─");
+                Console.ForegroundColor = ConsoleColor.White;
             }
 
             for (int i = y + 1; i < y + height; ++i)
             {
+                if (title == "ERROR")
+                    Console.ForegroundColor = ConsoleColor.Red;
                 Console.SetCursorPosition(x, i);
                 Console.Write("│");
                 Console.SetCursorPosition(x + width, i);
                 Console.Write("│");
+                Console.ForegroundColor = ConsoleColor.White;
             }
         }
 
@@ -302,6 +318,9 @@ namespace roguelikeobjecteditor.src
             Console.ForegroundColor = ConsoleColor.White;
 
             DrawBox(x, y, width, height, title);
+
+            if (title == "ERROR")
+                Console.ForegroundColor = ConsoleColor.Red;
 
             for (int i = y + 1; i < y + height; ++i)
             {
@@ -318,6 +337,7 @@ namespace roguelikeobjecteditor.src
             Console.SetCursorPosition(0, 0);
             Console.ReadLine();
             Console.CursorVisible = true;
+            Console.ForegroundColor = ConsoleColor.White;
         }
 
         public string GetInput(int x, int y, string prompt = "")
@@ -328,6 +348,8 @@ namespace roguelikeobjecteditor.src
 
             while (!inputCompleted)
             {
+                Console.CursorVisible = false;
+
                 string clearString = "";
 
                 for (int i = 0; i <= width; ++i)
@@ -349,6 +371,10 @@ namespace roguelikeobjecteditor.src
                 Console.SetCursorPosition(x + 1, y + 1);
                 foreach(char curChar in input)
                     Console.Write(curChar);
+                if (input.Count > 0)
+                    Console.SetCursorPosition(x + input.Count, y + 1);
+                else
+                    Console.SetCursorPosition(x + 1, y + 1);
 
                 ConsoleKeyInfo key = Console.ReadKey(true);
 
@@ -389,6 +415,8 @@ namespace roguelikeobjecteditor.src
             string returnString = "";
             foreach (char curChar in input)
                 returnString += curChar;
+
+            Console.CursorVisible = true;
             return returnString;
         }
 	}

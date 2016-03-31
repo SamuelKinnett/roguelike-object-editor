@@ -236,6 +236,7 @@ namespace roguelikeobjecteditor.src
         void ModifyNPC(NPC npc)
         {
             bool Finished = false;
+            int previousSelectedIndex = 0;
 
             while (!Finished)
             {
@@ -303,16 +304,15 @@ namespace roguelikeobjecteditor.src
                         "Aggressive",
                         "Hostile",
                         "Save and Return"
-                    });
+                    }, previousSelectedIndex);
 
                 string subChoice = "";
 
                 switch (menuChoice)
                 {
                     case "Name":
-                        Console.Clear();
-                        Console.Write("Enter New Name: ");
-                        npc.name = Console.ReadLine();
+                        npc.name = gui.GetInput(1, 2, "Enter New Name");
+                        previousSelectedIndex = 0;
                         break;
 
                     case "Level Range":
@@ -321,63 +321,59 @@ namespace roguelikeobjecteditor.src
                         switch (subChoice) {
 
                             case "Lower Bound":
-                                Console.Clear();
-                                Console.Write("Lower Level Bound: ");
-                                npc.levelRange[0] = int.Parse(Console.ReadLine());
+                                npc.levelRange[0] = int.Parse(gui.GetInput(2, 5, "Enter Lower Level Bound"));
                                 if (npc.levelRange[0] < 0)
                                 {
                                     npc.levelRange[0] = 0;
-                                    Console.WriteLine("Clamped Lower Level to 0");
+                                    gui.DrawMessageBox(2, 8, 25, 2, "Clamped Lower Level to 0", "");
                                 }
                                 else if (npc.levelRange[0] > 100)
                                 {
                                     npc.levelRange[0] = 100;
-                                    Console.WriteLine("Clamped Lower Level to 100");
+                                    gui.DrawMessageBox(2, 7, 27, 2, "Clamped Lower Level to 100", "");
                                 }
                                 break;
 
                             case "Upper Bound":
-                                Console.Clear();
-                                Console.Write("Upper Level Bound: ");
-                                npc.levelRange[1] = int.Parse(Console.ReadLine());
+                                npc.levelRange[1] = int.Parse(gui.GetInput(2, 6, "Enter Upper Level Bound"));
                                 if (npc.levelRange[1] < 0)
                                 {
                                     npc.levelRange[1] = 0;
-                                    Console.WriteLine("Clamped Lower Level to 0");
+                                    gui.DrawMessageBox(2, 9, 25, 2, "Clamped Upper Level to 0", "");
                                 }
                                 else if (npc.levelRange[1] > 100)
                                 {
                                     npc.levelRange[1] = 100;
-                                    Console.WriteLine("Clamped Lower Level to 100");
+                                    gui.DrawMessageBox(2, 9, 27, 2, "Clamped Upper Level to 100", "");
                                 }
                                 else if (npc.levelRange[1] < npc.levelRange[0])
                                 {
                                     npc.levelRange[1] = npc.levelRange[0];
-                                    Console.WriteLine("Clamped Upper Bound to Lower Bound");
+                                    gui.DrawMessageBox(2, 9, 35, 2, "Clamped Upper Level to Lower Level", "");
                                 }
                                 break;
                         }
+                        previousSelectedIndex = 1;
                         break;
 
                     case "Base Experience Points":
-                        Console.Clear();
-                        Console.Write("Base Experience Points: ");
-                        npc.baseEXP = int.Parse(Console.ReadLine());
+                        npc.baseEXP = int.Parse(gui.GetInput(1, 4, "Enter Base Experience Points"));
                         if (npc.baseEXP < 0)
                         {
                             npc.baseEXP = 0;
-                            Console.WriteLine("Clamped Base Experience Points to 0");
+                            gui.DrawMessageBox(1, 7, 29, 2, "Clamped Base Experience to 0", "");
                         }
+                        previousSelectedIndex = 2;
                         break;
 
                     case "Experience Modifier":
-                        Console.Write("Experience Modifier: ");
-                        npc.EXPModifier = float.Parse(Console.ReadLine());
+                        npc.EXPModifier = float.Parse(gui.GetInput(1, 5, "Enter Experience Modifier"));
                         if (npc.EXPModifier < 1)
                         {
                             npc.EXPModifier = 1;
-                            Console.WriteLine("Clamped Experience Modifier to 1");
+                            gui.DrawMessageBox(1, 8, 33, 2, "Clamped Experience Modifier to 1", "");
                         }
+                        previousSelectedIndex = 3;
                         break;
 
                     case "Drop Level Range":
@@ -386,44 +382,39 @@ namespace roguelikeobjecteditor.src
                         switch (subChoice) {
 
                             case "Lower Bound":
-                                Console.Clear();
-                                Console.Write("Lower Level Bound: ");
-                                npc.dropLevelRange[0] = int.Parse(Console.ReadLine());
+                                npc.dropLevelRange[0] = int.Parse(gui.GetInput(2, 8, "Enter Lower Level Bound"));
                                 if (npc.dropLevelRange[0] < 0)
                                 {
                                     npc.dropLevelRange[0] = 0;
-                                    Console.WriteLine("Clamped Lower Level to 0");
+                                    gui.DrawMessageBox(2, 11, 25, 2, "Clamped Lower Level to 0", "");
                                 }
                                 else if (npc.dropLevelRange[0] > 100)
                                 {
                                     npc.dropLevelRange[0] = 100;
-                                    Console.WriteLine("Clamped Lower Level to 100");
+                                    gui.DrawMessageBox(2, 11, 27, 2, "Clamped Lower Level to 100", "");
                                 }
                                 break;
 
-                        case "Upper Bound":
-                                Console.Clear();
-                                Console.Write("Upper Level Bound: ");
-                                npc.dropLevelRange[1] = int.Parse(Console.ReadLine());
+                            case "Upper Bound":
+                                npc.dropLevelRange[1] = int.Parse(gui.GetInput(2, 9, "Enter Upper Level Bound"));
                                 if (npc.dropLevelRange[1] < 0)
                                 {
                                     npc.dropLevelRange[1] = 0;
-                                    Console.WriteLine("Clamped Lower Level to 0");
+                                    gui.DrawMessageBox(2, 12, 25, 2, "Clamped Upper Level to 0", "");
                                 }
                                 else if (npc.dropLevelRange[1] > 100)
                                 {
                                     npc.dropLevelRange[1] = 100;
-                                    Console.WriteLine("Clamped Lower Level to 100");
+                                    gui.DrawMessageBox(2, 12, 27, 2, "Clamped Upper Level to 100", "");
                                 }
                                 else if (npc.dropLevelRange[1] < npc.dropLevelRange[0])
                                 {
                                     npc.dropLevelRange[1] = npc.dropLevelRange[0];
-                                    Console.WriteLine("Clamped Upper Bound to Lower Bound");
+                                    gui.DrawMessageBox(2, 12, 35, 2, "Clamped Upper Level to Lower Level", "");
                                 }
                                 break;
-                }
-
-
+                        }
+                        previousSelectedIndex = 4;
                         break;
 
                     case "Drop Types":
@@ -433,7 +424,7 @@ namespace roguelikeobjecteditor.src
                         switch (subChoice)
                         {
                             case "Add Drop Type":
-                                dropChoice = gui.DisplayList(2, 8, 20, 15, "", Enum.GetNames(typeof(ItemType)));
+                                dropChoice = gui.DisplayList(2, 9, 20, 10, "", Enum.GetNames(typeof(ItemType)));
                                 if (npc.drops != null)
                                 {
                                     if (!npc.drops.Contains((ItemType)Enum.Parse(typeof(ItemType), dropChoice)))
@@ -461,7 +452,7 @@ namespace roguelikeobjecteditor.src
                                     for (int temp = 0; temp < npc.drops.Count; ++temp)
                                         currentDrops[temp] = npc.drops.ToArray()[temp].ToString();
 
-                                    dropChoice = gui.DisplayList(2, 8, 20, currentDrops.Length + 1, "", currentDrops);
+                                    dropChoice = gui.DisplayList(2, 10, 20, currentDrops.Length + 1, "", currentDrops);
                                     if (npc.drops.Contains((ItemType)Enum.Parse(typeof(ItemType), dropChoice)))
                                     {
                                         npc.drops.Remove((ItemType)Enum.Parse(typeof(ItemType), dropChoice));
@@ -470,6 +461,7 @@ namespace roguelikeobjecteditor.src
                                 }
                                 break;
                         }
+                        previousSelectedIndex = 5;
                         break;
                 }
 
