@@ -14,6 +14,9 @@ namespace roguelikeobjecteditor.src
         public float[] defence;
         public float[] preference;
         public float agility;
+        public float perception;
+        public bool aggressive;
+        public bool hostile;
     }
 
     struct NPC
@@ -24,7 +27,7 @@ namespace roguelikeobjecteditor.src
         public float baseEXP;
         public float EXPModifier;
         public float[] biasValues;
-        public ItemType[] drops;
+        public List<ItemType> drops;
         public int[] dropLevelRange;
     }
 
