@@ -17,8 +17,8 @@ namespace roguelikeobjecteditor.src
 
 		public void Run() {
 
-            //fileManager.LoadUserPrefs();
-            //Console.ReadLine();
+            fileManager.LoadUserPrefs();
+            NPCFileExists = fileManager.LoadNPCData();
 
             bool exitProgram = false;
 
@@ -34,7 +34,8 @@ namespace roguelikeobjecteditor.src
                         break;
 
                     case "Modify NPC":
-                        if (NPCFileExists) ;
+                        if (NPCFileExists)
+                            fileManager.SelectNPCToModify();
                         else
                             gui.DisplayMessageBox("No NPC file was found", "ERROR");
                         break;
@@ -44,7 +45,7 @@ namespace roguelikeobjecteditor.src
                         break;
 
                     case "Exit":
-                        gui.DisplayMessageBox("Shutting Down");
+                        fileManager.SaveNPCData();
                         exitProgram = true;
                         break;
                 }

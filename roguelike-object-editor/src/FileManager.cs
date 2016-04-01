@@ -16,15 +16,17 @@ namespace roguelikeobjecteditor.src
         public FileManager(GUI gui)
         {
             this.gui = gui;
+            npcs = new List<NPC>();
         }
 
         StreamReader streamReader;
         StreamWriter streamWriter;
         GUI gui;
+        UserPrefs userPrefs;
 
         public UserPrefs LoadUserPrefs()
         {
-            UserPrefs userPrefs = new UserPrefs();
+            userPrefs = new UserPrefs();
 
             if (File.Exists(Directory.GetCurrentDirectory() + "\\prefs.txt"))
             {
@@ -97,7 +99,7 @@ namespace roguelikeobjecteditor.src
             streamWriter.Close();
         }
 
-        public bool LoadNPCData(UserPrefs userPrefs)
+        public bool LoadNPCData()
         {
             Console.Clear();
             gui.InitialiseProgressBar(1, 1, Console.WindowWidth - 3, "Loading Raw NPC Data");
@@ -158,30 +160,43 @@ namespace roguelikeobjecteditor.src
 
                     npc.biasValues = new float[10];
 
-                    for (int i = 0; i < 11; ++i)
+                    for (int i = 0; i < 10; ++i)
                         npc.biasValues[i] = float.Parse(npcData[22 + i]);
 
                     gui.UpdateProgressBar(curNPC * 4 + 2, totalOps);
 
                     //Load in the drop types
 
-                    if (npcData[33] != "END")
+                    if (npcData[32] != "END")
                     {
                         npc.drops = new List<ItemType>();
-                        int curIndex = 33;
+                        int curIndex = 32;
                         while (npcData[curIndex] != "END")
-                            npc.drops.Add((ItemType)int.Parse(npcData[curIndex]));
+                        {
+                            npc.drops.Add((ItemType)Enum.Parse(typeof(ItemType), npcData[curIndex]));
+                            ++curIndex;
+                        }
                     }
+
+                    npcs.Add(npc);
 
                     gui.UpdateProgressBar(curNPC * 4 + 3, totalOps);
                 }
+                streamReader.Close();
+                return true;
             }
             return false;
         }
 
-        public void SaveNPCData(UserPrefs userPrefs)
+        public void SaveNPCData()
         {
             streamWriter = new StreamWriter(userPrefs.folderLocation + "\\NPC.txt", false);
+            Console.Clear();
+
+            gui.InitialiseProgressBar(0, 0, Console.WindowWidth - 1, "Saving NPC Data");
+            float totalOps = npcs.Count * 3;
+            int count = 0;
+
             if (npcs.Count > 0)
             {
                 streamWriter.WriteLine(npcs.Count);
@@ -198,18 +213,26 @@ namespace roguelikeobjecteditor.src
                         + npc.stats.perception + ";"
                         + npc.stats.aggressive + ";"
                         + npc.stats.hostile + ";");
-                    for (int i = 0; i < 11; ++i)
+                    gui.UpdateProgressBar(count, totalOps);
+                    ++count;
+                    for (int i = 0; i < 10; ++i)
                     {
                         streamWriter.Write(npc.biasValues[i] + ";");
                     }
+                    gui.UpdateProgressBar(count, totalOps);
+                    ++count;
                     for (int i = 0; i < npc.drops.Count; ++i)
                     {
                         streamWriter.Write(npc.drops[i] + ";");
                     }
+                    gui.UpdateProgressBar(count, totalOps);
+                    ++count;
                     streamWriter.Write("END");
                     streamWriter.Write("\n");
                 }
             }
+
+            streamWriter.Close();
         }
 
         public bool AddNPC ()
@@ -228,9 +251,27 @@ namespace roguelikeobjecteditor.src
             newNPC.stats.preference = new float[3];
             newNPC.drops = new List<ItemType>();
 
-            ModifyNPC(newNPC);
+            npcs.Add(newNPC);
+            ModifyNPC(npcs[npcs.Count - 1]);
 
             return false;
+        }
+
+        public void SelectNPCToModify()
+        {
+            Console.Clear();
+            NPC[] npcList = npcs.ToArray();
+            string[] npcNameList = new string[npcList.Length];
+
+            for (int i = 0; i < npcList.Length; ++i)
+                npcNameList[i] = npcList[i].name;
+
+            string selectedNPC = gui.DisplayList(0, 0, Console.WindowWidth - 1, Console.WindowHeight - 1, "Select NPC to Modify", npcNameList);
+
+            for (int i = 0; i < npcs.Count; ++i)
+                if (npcs[i].name == selectedNPC)
+                    ModifyNPC(npcs[i]);
+           
         }
 
         void ModifyNPC(NPC npc)
@@ -261,24 +302,62 @@ namespace roguelikeobjecteditor.src
                 Console.SetCursorPosition(32, 6);
                 foreach (ItemType drop in npc.drops)
                     Console.Write(drop.ToString() + ", ");
+
                 Console.SetCursorPosition(32, 7);
-                Console.Write(npc.stats.hp + " (" + npc.biasValues[0] + ")");
+                Console.Write(npc.stats.hp);
+                Console.ForegroundColor = ConsoleColor.DarkGray;
+                Console.Write(" [" + npc.biasValues[0].ToString("0.00") + "]");
+                Console.ForegroundColor = ConsoleColor.White;
+
                 Console.SetCursorPosition(32, 8);
-                Console.Write(npc.stats.combatSkill + " (" + npc.biasValues[1] + ")");
+                Console.Write(npc.stats.combatSkill);
+                Console.ForegroundColor = ConsoleColor.DarkGray;
+                Console.Write(" [" + npc.biasValues[1].ToString("0.00") + "]");
+                Console.ForegroundColor = ConsoleColor.White;
+
                 Console.SetCursorPosition(32, 9);
-                Console.Write(npc.stats.damage[0] + " (" + npc.biasValues[2] + ") "
-                    + " / " + npc.stats.damage[1] + " (" + npc.biasValues[3] + ") "
-                    + " / " + npc.stats.damage[2] + " (" + npc.biasValues[4] + ") ");
+                Console.Write(npc.stats.damage[0]);
+                Console.ForegroundColor = ConsoleColor.DarkGray;
+                Console.Write(" [" + npc.biasValues[2].ToString("0.00") + "] ");
+                Console.ForegroundColor = ConsoleColor.White;
+                Console.Write("/ " + npc.stats.damage[1]);
+                Console.ForegroundColor = ConsoleColor.DarkGray;
+                Console.Write(" [" + npc.biasValues[3].ToString("0.00") + "] ");
+                Console.ForegroundColor = ConsoleColor.White;
+                Console.Write("/ " + npc.stats.damage[2]);
+                Console.ForegroundColor = ConsoleColor.DarkGray;
+                Console.Write(" [" + npc.biasValues[4].ToString("0.00") + "]");
+                Console.ForegroundColor = ConsoleColor.White;
+
                 Console.SetCursorPosition(32, 10);
-                Console.Write(npc.stats.defence[0] + " (" + npc.biasValues[5] + ") "
-                    + " / " + npc.stats.defence[1] + " (" + npc.biasValues[6] + ") "
-                    + " / " + npc.stats.defence[2] + " (" + npc.biasValues[7] + ") ");
+                Console.Write(npc.stats.defence[0]);
+                Console.ForegroundColor = ConsoleColor.DarkGray;
+                Console.Write(" [" + npc.biasValues[5].ToString("0.00") + "] ");
+                Console.ForegroundColor = ConsoleColor.White;
+                Console.Write("/ " + npc.stats.defence[1]);
+                Console.ForegroundColor = ConsoleColor.DarkGray;
+                Console.Write(" [" + npc.biasValues[6].ToString("0.00") + "] ");
+                Console.ForegroundColor = ConsoleColor.White;
+                Console.Write("/ " + npc.stats.defence[2]);
+                Console.ForegroundColor = ConsoleColor.DarkGray;
+                Console.Write(" [" + npc.biasValues[7].ToString("0.00") + "] ");
+                Console.ForegroundColor = ConsoleColor.White;
+
                 Console.SetCursorPosition(32, 11);
-                Console.Write(npc.stats.preference[0] + " / " + npc.stats.preference[1] + " / " + npc.stats.preference[2]);
+                Console.Write(npc.stats.preference[0].ToString("0.00") + " / " + npc.stats.preference[1].ToString("0.00") + " / " + npc.stats.preference[2].ToString("0.00"));
+
                 Console.SetCursorPosition(32, 12);
-                Console.Write(npc.stats.agility + " (" + npc.biasValues[8] + ")");
+                Console.Write(npc.stats.agility);
+                Console.ForegroundColor = ConsoleColor.DarkGray;
+                Console.Write(" [" + npc.biasValues[8].ToString("0.00") + "]");
+                Console.ForegroundColor = ConsoleColor.White;
+
                 Console.SetCursorPosition(32, 13);
-                Console.Write(npc.stats.perception + " (" + npc.biasValues[9] + ")");
+                Console.Write(npc.stats.perception);
+                Console.ForegroundColor = ConsoleColor.DarkGray;
+                Console.Write(" [" + npc.biasValues[9].ToString("0.00") + "]");
+                Console.ForegroundColor = ConsoleColor.White;
+
                 Console.SetCursorPosition(32, 14);
                 Console.Write(npc.stats.aggressive);
                 Console.SetCursorPosition(32, 15);
@@ -303,10 +382,12 @@ namespace roguelikeobjecteditor.src
                         "Perception",
                         "Aggressive",
                         "Hostile",
+                        "Modify Bias Values",
                         "Save and Return"
                     }, previousSelectedIndex);
 
                 string subChoice = "";
+                float[] choices;
 
                 switch (menuChoice)
                 {
@@ -331,6 +412,11 @@ namespace roguelikeobjecteditor.src
                                 {
                                     npc.levelRange[0] = 100;
                                     gui.DrawMessageBox(2, 7, 27, 2, "Clamped Lower Level to 100", "");
+                                }
+                                else if (npc.levelRange[0] > npc.levelRange[1])
+                                {
+                                    npc.levelRange[0] = npc.levelRange[1];
+                                    gui.DrawMessageBox(2, 7, 35, 2, "Clamped Lower Bound to Upper Bound", "");
                                 }
                                 break;
 
@@ -357,7 +443,7 @@ namespace roguelikeobjecteditor.src
                         break;
 
                     case "Base Experience Points":
-                        npc.baseEXP = int.Parse(gui.GetInput(1, 4, "Enter Base Experience Points"));
+                        npc.baseEXP = float.Parse(gui.GetInput(1, 4, "Enter Base Experience Points"));
                         if (npc.baseEXP < 0)
                         {
                             npc.baseEXP = 0;
@@ -463,9 +549,297 @@ namespace roguelikeobjecteditor.src
                         }
                         previousSelectedIndex = 5;
                         break;
-                }
 
+                    case "HP":
+                        npc.stats.hp = int.Parse(gui.GetInput(1, 8, "Enter HP"));
+                        if (npc.stats.hp < 0)
+                        {
+                            npc.stats.hp = 0;
+                            gui.DrawMessageBox(1, 11, 16, 2, "Clamped HP to 0", "");
+                        }
+                        else if (npc.stats.hp > 9999)
+                        {
+                            npc.stats.hp = 9999;
+                            gui.DrawMessageBox(1, 11, 19, 2, "Clamped HP to 9999", "");
+                        }
+                        previousSelectedIndex = 6;
+                        break;
+
+                    case "Combat Skill":
+                        npc.stats.combatSkill = float.Parse(gui.GetInput(1, 9, "Enter Combat Skill"));
+                        if (npc.stats.combatSkill < 0)
+                        {
+                            npc.stats.combatSkill = 0;
+                            gui.DrawMessageBox(1, 12, 26, 2, "Clamped Combat Skill to 0", "");
+                        }
+                        else if (npc.stats.combatSkill > 100)
+                        {
+                            npc.stats.combatSkill = 100;
+                            gui.DrawMessageBox(1, 12, 28, 2, "Clamped Combat Skill to 100", "");
+                        }
+                        previousSelectedIndex = 7;
+                        break;
+
+                    case "Damage (S/B/P)":
+                        subChoice = gui.DisplayList(1, 10, 20, 4, "Modify Which?", new string[] { "Slashing", "Bashing", "Piercing" });
+                        switch (subChoice)
+                        {
+                            case "Slashing":
+                                npc.stats.damage[0] = float.Parse(gui.GetInput(2, 12, "Enter Slashing Damage"));
+                                if (npc.stats.damage[0] < 0)
+                                {
+                                    npc.stats.damage[0] = 0;
+                                    gui.DrawMessageBox(2, 15, 29, 2, "Clamped Slashing Damage to 0", "");
+                                }
+                                else if (npc.stats.damage[0] > 100)
+                                {
+                                    npc.stats.damage[0] = 100;
+                                    gui.DrawMessageBox(2, 15, 31, 2, "Clamped Slashing Damage to 100", "");
+                                }
+                                break;
+
+                            case "Bashing":
+                                npc.stats.damage[1] = float.Parse(gui.GetInput(2, 13, "Enter Bashing Damage"));
+                                if (npc.stats.damage[1] < 0)
+                                {
+                                    npc.stats.damage[1] = 0;
+                                    gui.DrawMessageBox(2, 16, 28, 2, "Clamped Bashing Damage to 0", "");
+                                }
+                                else if (npc.stats.damage[1] > 100)
+                                {
+                                    npc.stats.damage[1] = 100;
+                                    gui.DrawMessageBox(2, 16, 30, 2, "Clamped Bashing Damage to 100", "");
+                                }
+                                break;
+
+                            case "Piercing":
+                                npc.stats.damage[2] = float.Parse(gui.GetInput(2, 14, "Enter Piercing Damage"));
+                                if (npc.stats.damage[2] < 0)
+                                {
+                                    npc.stats.damage[2] = 0;
+                                    gui.DrawMessageBox(2, 17, 29, 2, "Clamped Piercing Damage to 0", "");
+                                }
+                                else if (npc.stats.damage[2] > 100)
+                                {
+                                    npc.stats.damage[2] = 100;
+                                    gui.DrawMessageBox(2, 17, 31, 2, "Clamped Piercing Damage to 100", "");
+                                }
+                                break;
+                        }
+                        previousSelectedIndex = 8;
+                        break;
+
+                    case "Defence (S/B/P)":
+                        subChoice = gui.DisplayList(1, 11, 20, 4, "Modify Which?", new string[] { "Slashing", "Bashing", "Piercing" });
+                        switch (subChoice)
+                        {
+                            case "Slashing":
+                                npc.stats.defence[0] = float.Parse(gui.GetInput(2, 13, "Enter Slashing Defence"));
+                                if (npc.stats.defence[0] < 0)
+                                {
+                                    npc.stats.defence[0] = 0;
+                                    gui.DrawMessageBox(2, 16, 30, 2, "Clamped Slashing Defence to 0", "");
+                                }
+                                else if (npc.stats.defence[0] > 100)
+                                {
+                                    npc.stats.defence[0] = 100;
+                                    gui.DrawMessageBox(2, 16, 32, 2, "Clamped Slashing Defence to 100", "");
+                                }
+                                break;
+
+                            case "Bashing":
+                                npc.stats.defence[1] = float.Parse(gui.GetInput(2, 14, "Enter Bashing Defence"));
+                                if (npc.stats.defence[1] < 0)
+                                {
+                                    npc.stats.defence[1] = 0;
+                                    gui.DrawMessageBox(2, 17, 29, 2, "Clamped Bashing Defence to 0", "");
+                                }
+                                else if (npc.stats.defence[1] > 100)
+                                {
+                                    npc.stats.defence[1] = 100;
+                                    gui.DrawMessageBox(2, 17, 31, 2, "Clamped Bashing Defence to 100", "");
+                                }
+                                break;
+
+                            case "Piercing":
+                                npc.stats.defence[2] = float.Parse(gui.GetInput(2, 15, "Enter Piercing Defence"));
+                                if (npc.stats.defence[2] < 0)
+                                {
+                                    npc.stats.defence[2] = 0;
+                                    gui.DrawMessageBox(2, 18, 30, 2, "Clamped Piercing Defence to 0", "");
+                                }
+                                else if (npc.stats.defence[2] > 100)
+                                {
+                                    npc.stats.defence[2] = 100;
+                                    gui.DrawMessageBox(2, 18, 32, 2, "Clamped Piercing Defence to 100", "");
+                                }
+                                break;
+                        }
+                        previousSelectedIndex = 9;
+                        break;
+
+                    case "Preference (S/B/P)":
+                        choices = new float[3];
+                        choices[0] = float.Parse(gui.GetInput(1, 12, "Enter Slashing Preference"));
+                        if (choices[0] < 0)
+                            choices[0] = 0;
+                        choices[1] = float.Parse(gui.GetInput(1, 15, "Enter Bashing Preference"));
+                        if (choices[1] < 0)
+                            choices[1] = 0;
+                        choices[2] = float.Parse(gui.GetInput(1, 18, "Enter Piercing Preference"));
+                        if (choices[2] < 0)
+                            choices[2] = 0;
+
+                        //Normalise
+                        float total = choices[0] + choices[1] + choices[2];
+
+                        if (total > 0)
+                        {
+                            npc.stats.preference[0] = choices[0] / total;
+                            npc.stats.preference[1] = choices[1] / total;
+                            npc.stats.preference[2] = choices[2] / total;
+                            gui.DisplayMessageBox("Normalised Preferences");
+                        }
+                        else
+                        {
+                            gui.DisplayMessageBox("You Must Input Preference Values", "ERROR");
+                        }
+                        previousSelectedIndex = 10;
+                        break;
+
+                    case "Agility":
+                        npc.stats.agility = float.Parse(gui.GetInput(1, 13, "Enter Agility"));
+                        if (npc.stats.agility < 0)
+                        {
+                            npc.stats.agility = 0;
+                            gui.DrawMessageBox(1, 16, 21, 2, "Clamped Agility to 0", "");
+                        }
+                        else if (npc.stats.agility > 100)
+                        {
+                            npc.stats.agility = 100;
+                            gui.DrawMessageBox(1, 16, 23, 2, "Clamped Agility to 100", "");
+                        }
+                        previousSelectedIndex = 11;
+                        break;
+
+                    case "Perception":
+                        npc.stats.perception = int.Parse(gui.GetInput(1, 14, "Enter Perception"));
+                        if (npc.stats.perception < 0)
+                        {
+                            npc.stats.perception = 0;
+                            gui.DrawMessageBox(1, 17, 24, 2, "Clamped Perception to 0", "");
+                        }
+                        else if (npc.stats.perception > 100)
+                        {
+                            npc.stats.perception = 100;
+                            gui.DrawMessageBox(1, 17, 26, 2, "Clamped Perception to 100", "");
+                        }
+                        previousSelectedIndex = 12;
+                        break;
+
+                    case "Aggressive":
+                        npc.stats.aggressive = bool.Parse(gui.DisplayList(1, 15, 20, 3, "Aggressive Value", new string[] { "True", "False" }));
+                        previousSelectedIndex = 13;
+                        break;
+
+                    case "Hostile":
+                        npc.stats.hostile = bool.Parse(gui.DisplayList(1, 16, 20, 3, "Hostile Value", new string[] { "True", "False" }));
+                        previousSelectedIndex = 14;
+                        break;
+
+                    case "Modify Bias Values":
+                        choices = new float[10];
+
+                        choices[0] = float.Parse(gui.GetInput(1, 1, "Enter HP Bias"));
+                        if (choices[0] < 0)
+                            choices[0] = 0;
+                        choices[1] = float.Parse(gui.GetInput(1, 4, "Enter Combat Skill Bias"));
+                        if (choices[1] < 0)
+                            choices[1] = 0;
+                        choices[2] = float.Parse(gui.GetInput(1, 7, "Enter Slashing Damage Bias"));
+                        if (choices[2] < 0)
+                            choices[2] = 0;
+                        choices[3] = float.Parse(gui.GetInput(1, 10, "Enter Bashing Damage Bias"));
+                        if (choices[3] < 0)
+                            choices[3] = 0;
+                        choices[4] = float.Parse(gui.GetInput(1, 13, "Enter Piercing Damage Bias"));
+                        if (choices[4] < 0)
+                            choices[4] = 0;
+                        choices[5] = float.Parse(gui.GetInput(1, 16, "Enter Slashing Defence Bias"));
+                        if (choices[5] < 0)
+                            choices[5] = 0;
+                        choices[6] = float.Parse(gui.GetInput(30, 1, "Enter Bashing Defence Bias"));
+                        if (choices[6] < 0)
+                            choices[6] = 0;
+                        choices[7] = float.Parse(gui.GetInput(30, 4, "Enter Piercing Defence Bias"));
+                        if (choices[7] < 0)
+                            choices[7] = 0;
+                        choices[8] = float.Parse(gui.GetInput(30, 7, "Enter Agility Bias"));
+                        if (choices[8] < 0)
+                            choices[8] = 0;
+                        choices[9] = float.Parse(gui.GetInput(30, 10, "Enter Perception Bias"));
+                        if (choices[9] < 0)
+                            choices[9] = 0;
+
+                        //Normalise
+
+                        float tempTotal = 0;
+
+                        for (int i = 0; i < 10; ++i)
+                            tempTotal += choices[i];
+
+                        for (int i = 0; i < 10; ++i)
+                            npc.biasValues[i] = choices[i] / tempTotal;
+
+                        gui.DisplayMessageBox("Normalised Bias Values");
+                        previousSelectedIndex = 15;
+                        break;
+
+                    case "Save and Return":
+                        if (npc.name != "")
+                        {
+                            if (npc.EXPModifier >= 1)
+                            {
+                                if (npc.stats.hp > 0)
+                                {
+                                    if (npc.stats.preference[0] + npc.stats.preference[1] + npc.stats.preference[2] > 0)
+                                    {
+                                        float testTotal = 0;
+                                        for (int i = 0; i < 10; ++i)
+                                            testTotal += npc.biasValues[i];
+                                        if (testTotal > 0)
+                                        {
+                                            npcs.Add(npc);
+                                            Finished = true;
+                                        } else
+                                        {
+                                            gui.DisplayMessageBox("Please Enter Bias Values", "ERROR");
+                                        }
+                                    }
+                                    else
+                                    {
+                                        gui.DisplayMessageBox("Please Enter Attack Preferences", "ERROR");
+                                    }
+                                }
+                                else
+                                {
+                                    gui.DisplayMessageBox("Please Enter a HP Value", "ERROR");
+                                }
+                            }
+                            else
+                            {
+                                gui.DisplayMessageBox("Please Enter an EXP Modifier", "ERROR");
+                            }
+                        }
+                        else
+                        {
+                            gui.DisplayMessageBox("Please Enter a Name", "ERROR");
+                        }
+
+                        break;
+                }
             }
         }
+
     }
 }
