@@ -197,9 +197,10 @@ namespace roguelikeobjecteditor.src
             float totalOps = npcs.Count * 3;
             int count = 0;
 
+            streamWriter.WriteLine(npcs.Count);
+
             if (npcs.Count > 0)
             {
-                streamWriter.WriteLine(npcs.Count);
                 foreach (NPC npc in npcs)
                 {
                     streamWriter.Write(npc.name + ";" + npc.levelRange[0] + ";" + npc.levelRange[1] + ";"
