@@ -12,11 +12,18 @@ namespace roguelikeobjecteditor.src
     {
 
         List<NPC> npcs;
+		char fileDivider;
 
         public FileManager(GUI gui)
         {
             this.gui = gui;
             npcs = new List<NPC>();
+
+			//Work out what file divider to use
+			if (Environment.OSVersion.Platform == PlatformID.Unix)
+				fileDivider = '/';
+			else
+				fileDivider = '\\';
         }
 
         StreamReader streamReader;
@@ -28,16 +35,16 @@ namespace roguelikeobjecteditor.src
         {
             userPrefs = new UserPrefs();
 
-            if (File.Exists(Directory.GetCurrentDirectory() + "\\prefs.txt"))
+            if (File.Exists(Directory.GetCurrentDirectory() + fileDivider + "prefs.txt"))
             {
-                streamReader = new StreamReader(Directory.GetCurrentDirectory() + "\\prefs.txt");
+                streamReader = new StreamReader(Directory.GetCurrentDirectory() + fileDivider + "prefs.txt");
                 userPrefs.folderLocation = streamReader.ReadLine();
                 streamReader.Close();
             }
             else
             {
                 CreateUserPrefs(SelectFolderLocation());
-                streamReader = new StreamReader(Directory.GetCurrentDirectory() + "\\prefs.txt");
+                streamReader = new StreamReader(Directory.GetCurrentDirectory() + fileDivider + "prefs.txt");
                 userPrefs.folderLocation = streamReader.ReadLine();
                 streamReader.Close();
             }
@@ -62,7 +69,7 @@ namespace roguelikeobjecteditor.src
                 //Remove the preceding file path
                 for (int curDir = 1; curDir < choices.Length; ++curDir) {
                     choices[curDir] = choices[curDir].Substring(currentPath.Length);
-                    choices[curDir] = choices[curDir].Trim('\\');
+                    choices[curDir] = choices[curDir].Trim(fileDivider);
                 }
                 string newDirectory = gui.DisplayList(0, 0, Console.WindowWidth - 1, Console.WindowHeight - 1,"(S)elect Location for Game Files.", choices);
                 if (newDirectory == "ALTSELECT")
@@ -71,21 +78,21 @@ namespace roguelikeobjecteditor.src
                 }
                 else if (newDirectory == "↑")
                 {
-                    string[] tempStringArray = currentPath.Split('\\');
+                    string[] tempStringArray = currentPath.Split(fileDivider);
                     if (tempStringArray.Length > 2)
                     {
                         currentPath = tempStringArray[0];
                         for (int temp = 1; temp < tempStringArray.Length - 1; ++temp)
                         {
-                            currentPath += "\\" + tempStringArray[temp];
+                            currentPath += fileDivider + tempStringArray[temp];
                         }
                     } else {
-                        currentPath = tempStringArray[0] + "\\";
+                        currentPath = tempStringArray[0] + fileDivider;
                     }
                 } 
                 else
                 {
-                    currentPath += "\\" + newDirectory;
+                    currentPath += fileDivider + newDirectory;
                 }
             }
 
@@ -94,7 +101,7 @@ namespace roguelikeobjecteditor.src
 
         public void CreateUserPrefs(string folderLocation)
         {
-            streamWriter = new StreamWriter(Directory.GetCurrentDirectory() + "\\prefs.txt");
+            streamWriter = new StreamWriter(Directory.GetCurrentDirectory() + fileDivider + "prefs.txt");
             streamWriter.WriteLine(folderLocation);
             streamWriter.Close();
         }
@@ -103,8 +110,8 @@ namespace roguelikeobjecteditor.src
         {
             Console.Clear();
             gui.InitialiseProgressBar(1, 1, Console.WindowWidth - 3, "Loading Raw NPC Data");
-            if (File.Exists(userPrefs.folderLocation + "\\NPC.txt")) {
-                streamReader = new StreamReader(userPrefs.folderLocation + "\\NPC.txt");
+            if (File.Exists(userPrefs.folderLocation + fileDivider + "NPC.txt")) {
+                streamReader = new StreamReader(userPrefs.folderLocation + fileDivider + "NPC.txt");
                 int npcCount = int.Parse(streamReader.ReadLine());
                 List<string> rawData = new List<string>();
                 for (int currentNPCData = 0; currentNPCData < npcCount; ++currentNPCData)
@@ -190,7 +197,7 @@ namespace roguelikeobjecteditor.src
 
         public void SaveNPCData()
         {
-            streamWriter = new StreamWriter(userPrefs.folderLocation + "\\NPC.txt", false);
+            streamWriter = new StreamWriter(userPrefs.folderLocation + fileDivider + "NPC.txt", false);
             Console.Clear();
 
             gui.InitialiseProgressBar(0, 0, Console.WindowWidth - 1, "Saving NPC Data");
@@ -253,7 +260,7 @@ namespace roguelikeobjecteditor.src
             newNPC.drops = new List<ItemType>();
 
             npcs.Add(newNPC);
-            ModifyNPC(npcs[npcs.Count - 1]);
+			npcs[npcs.Count - 1] = ModifyNPC(npcs[npcs.Count - 1]);
 
             return false;
         }
@@ -262,20 +269,58 @@ namespace roguelikeobjecteditor.src
         {
             Console.Clear();
             NPC[] npcList = npcs.ToArray();
+			bool exitLoop = false;
             string[] npcNameList = new string[npcList.Length];
 
-            for (int i = 0; i < npcList.Length; ++i)
-                npcNameList[i] = npcList[i].name;
+			while (!exitLoop) {
 
-            string selectedNPC = gui.DisplayList(0, 0, Console.WindowWidth - 1, Console.WindowHeight - 1, "Select NPC to Modify", npcNameList);
+				for (int i = 0; i < npcList.Length; ++i)
+					npcNameList [i] = npcList [i].name;
 
-            for (int i = 0; i < npcs.Count; ++i)
-                if (npcs[i].name == selectedNPC)
-                    ModifyNPC(npcs[i]);
+				string selectedNPC = gui.DisplayList (0, 0, Console.WindowWidth - 1, Console.WindowHeight - 1, "Select NPC to Modify", npcNameList);
+
+				for (int i = 0; i < npcs.Count; ++i)
+					if (npcs [i].name == selectedNPC) {
+						string subChoice = gui.DisplayList (1, i + 2, 20, 4, "", new string[] { "Modify", "Delete", "Cancel", "Back to Menu" });
+						switch (subChoice) {
+
+						case "Modify":
+							npcs [i] = ModifyNPC (npcs [i]);
+							break;
+
+						case "Delete":
+							//If we have deleted the last NPC then go back to the menu
+							if (DeleteNPC(i))
+								exitLoop = true;
+							break;
+
+						case "Cancel":
+
+							break;
+
+						case "Back to Menu":
+							exitLoop = true;
+							break;
+						}
+					}
            
+			}
         }
 
-        void ModifyNPC(NPC npc)
+		bool DeleteNPC(int index) {
+			npcs.RemoveAt (index);
+			if (npcs.Count == 0)
+				return true;
+			return false;
+		}
+
+		public bool NPCListEmpty() {
+			if (npcs.Count == 0)
+				return true;
+			return false;
+		}
+
+        NPC ModifyNPC(NPC npc)
         {
             bool Finished = false;
             int previousSelectedIndex = 0;
@@ -306,41 +351,41 @@ namespace roguelikeobjecteditor.src
 
                 Console.SetCursorPosition(32, 7);
                 Console.Write(npc.stats.hp);
-                Console.ForegroundColor = ConsoleColor.DarkGray;
+                Console.ForegroundColor = ConsoleColor.Cyan;
                 Console.Write(" [" + npc.biasValues[0].ToString("0.00") + "]");
                 Console.ForegroundColor = ConsoleColor.White;
 
                 Console.SetCursorPosition(32, 8);
                 Console.Write(npc.stats.combatSkill);
-                Console.ForegroundColor = ConsoleColor.DarkGray;
+                Console.ForegroundColor = ConsoleColor.Cyan;
                 Console.Write(" [" + npc.biasValues[1].ToString("0.00") + "]");
                 Console.ForegroundColor = ConsoleColor.White;
 
                 Console.SetCursorPosition(32, 9);
                 Console.Write(npc.stats.damage[0]);
-                Console.ForegroundColor = ConsoleColor.DarkGray;
+                Console.ForegroundColor = ConsoleColor.Cyan;
                 Console.Write(" [" + npc.biasValues[2].ToString("0.00") + "] ");
                 Console.ForegroundColor = ConsoleColor.White;
                 Console.Write("/ " + npc.stats.damage[1]);
-                Console.ForegroundColor = ConsoleColor.DarkGray;
+                Console.ForegroundColor = ConsoleColor.Cyan;
                 Console.Write(" [" + npc.biasValues[3].ToString("0.00") + "] ");
                 Console.ForegroundColor = ConsoleColor.White;
                 Console.Write("/ " + npc.stats.damage[2]);
-                Console.ForegroundColor = ConsoleColor.DarkGray;
+                Console.ForegroundColor = ConsoleColor.Cyan;
                 Console.Write(" [" + npc.biasValues[4].ToString("0.00") + "]");
                 Console.ForegroundColor = ConsoleColor.White;
 
                 Console.SetCursorPosition(32, 10);
                 Console.Write(npc.stats.defence[0]);
-                Console.ForegroundColor = ConsoleColor.DarkGray;
+                Console.ForegroundColor = ConsoleColor.Cyan;
                 Console.Write(" [" + npc.biasValues[5].ToString("0.00") + "] ");
                 Console.ForegroundColor = ConsoleColor.White;
                 Console.Write("/ " + npc.stats.defence[1]);
-                Console.ForegroundColor = ConsoleColor.DarkGray;
+                Console.ForegroundColor = ConsoleColor.Cyan;
                 Console.Write(" [" + npc.biasValues[6].ToString("0.00") + "] ");
                 Console.ForegroundColor = ConsoleColor.White;
                 Console.Write("/ " + npc.stats.defence[2]);
-                Console.ForegroundColor = ConsoleColor.DarkGray;
+                Console.ForegroundColor = ConsoleColor.Cyan;
                 Console.Write(" [" + npc.biasValues[7].ToString("0.00") + "] ");
                 Console.ForegroundColor = ConsoleColor.White;
 
@@ -349,13 +394,13 @@ namespace roguelikeobjecteditor.src
 
                 Console.SetCursorPosition(32, 12);
                 Console.Write(npc.stats.agility);
-                Console.ForegroundColor = ConsoleColor.DarkGray;
+                Console.ForegroundColor = ConsoleColor.Cyan;
                 Console.Write(" [" + npc.biasValues[8].ToString("0.00") + "]");
                 Console.ForegroundColor = ConsoleColor.White;
 
                 Console.SetCursorPosition(32, 13);
                 Console.Write(npc.stats.perception);
-                Console.ForegroundColor = ConsoleColor.DarkGray;
+                Console.ForegroundColor = ConsoleColor.Cyan;
                 Console.Write(" [" + npc.biasValues[9].ToString("0.00") + "]");
                 Console.ForegroundColor = ConsoleColor.White;
 
@@ -809,13 +854,9 @@ namespace roguelikeobjecteditor.src
                                         for (int i = 0; i < 10; ++i)
                                             testTotal += npc.biasValues[i];
                                         if (testTotal > 0)
-                                        {
-                                            npcs.Add(npc);
                                             Finished = true;
-                                        } else
-                                        {
+                                        else
                                             gui.DisplayMessageBox("Please Enter Bias Values", "ERROR");
-                                        }
                                     }
                                     else
                                     {
@@ -840,7 +881,9 @@ namespace roguelikeobjecteditor.src
                         break;
                 }
             }
+			return npc;
         }
 
     }
+
 }

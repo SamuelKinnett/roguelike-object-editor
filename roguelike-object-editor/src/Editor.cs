@@ -35,6 +35,7 @@ namespace roguelikeobjecteditor.src
 
                     case "Modify NPC":
                         if (NPCFileExists)
+					//if (!fileManager.NPCListEmpty())
                             fileManager.SelectNPCToModify();
                         else
                             gui.DisplayMessageBox("No NPC file was found", "ERROR");
